@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>咖啡香溫濕度氣象站 | Cozy Coffee Weather & Humidity</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            coffee: {
+              50: '#faf7f2',
+              100: '#f2e9de',
+              200: '#e5d3c2',
+              300: '#d5b79e',
+              400: '#c39575',
+              500: '#c88a58', // Warm Caramel
+              600: '#8c6239', // Roasted Mocha
+              700: '#7c5535', // Dark Mocha
+              800: '#4a3324', // Espresso
+              900: '#3b281c', // Dark Cocoa
+              950: '#2c1e17', // Deep Dark Text
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', 'Noto Sans TC', sans-serif;
+      background-color: #f7f2ec;
+      color: #2c1e17;
+    }
+
+    /* Coffee Theme Warm Cards */
+    .coffee-card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid #e8ded5;
+      border-radius: 1.25rem;
+      box-shadow: 0 10px 25px -5px rgba(74, 51, 36, 0.05), 0 8px 10px -6px rgba(74, 51, 36, 0.03);
+    }
+
+    .coffee-card-sm {
+      background: #faf7f2;
+      border: 1px solid #e5d3c2;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f2e9de;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #c39575;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #8c6239;
+    }
+  </style>
+</head>
+<body class="min-h-screen pb-12 flex flex-col justify-between antialiased">
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+
+  <!-- Header -->
+  <header class="border-b border-[#e8ded5] bg-white/80 sticky top-0 z-40 backdrop-blur-md shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#4a3324] to-[#8c6239] flex items-center justify-center text-amber-100 text-xl shadow-md shadow-[#4a3324]/20">
+          <i class="fa-solid fa-mug-hot"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-lg sm:text-xl tracking-tight text-[#4a3324] flex items-center gap-2">
+            咖啡氣象與濕度觀測站
+            <span class="text-xs px-2 py-0.5 rounded-full bg-[#f2e9de] text-[#8c6239] font-normal hidden sm:inline">Cozy Mode</span>
+          </h1>
+          <p class="text-xs text-[#7d6f66] hidden sm:block">溫暖質感的每日氣溫與相對濕度預報系統</p>
+        </div>
+      </div>
+
+      <!-- Current Location Tag & Quick Auto-Locate Button -->
+      <div class="flex items-center gap-2">
+        <div class="coffee-card-sm px-3.5 py-1.5 rounded-full flex items-center gap-2 text-xs sm:text-sm text-[#7c5535]">
+          <i class="fa-solid fa-location-dot text-[#c88a58] animate-bounce"></i>
+          <span id="current-location-text" class="font-medium truncate max-w-[180px] sm:max-w-[260px]">定位中...</span>
+        </div>
+        
+        <button id="btn-relocate" title="重新獲取 GPS 定位" class="p-2 rounded-full bg-[#f2e9de] hover:bg-[#4a3324] text-[#7c5535] hover:text-white border border-[#e5d3c2] transition duration-200 shadow-sm">
+          <i class="fa-solid fa-crosshairs"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-6">
+
+    <!-- Search Toolbar & Forecast Range Selector -->
+    <section class="coffee-card p-4 sm:p-5">
+      <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+        
+        <!-- Address Search & Preset Dropdown -->
+        <div class="flex flex-col sm:flex-row items-stretch gap-3 flex-1">
+          <!-- Preset Selector -->
+          <div class="relative min-w-[150px]">
+            <select id="preset-select" class="w-full bg-[#faf7f2] border border-[#e5d3c2] text-[#2c1e17] text-sm rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-[#c88a58] focus:border-transparent outline-none cursor-pointer appearance-none pr-8 font-medium">
+              <option value="" disabled selected>快速切換城市</option>
+              <optgroup label="台灣主要城市">
+                <option value="25.0330,121.5654">臺北市</option>
+                <option value="25.0120,121.4657">新北市</option>
+                <option value="24.9936,121.3010">桃園市</option>
+                <option value="24.8138,120.9675">新竹市</option>
+                <option value="24.1477,120.6736">臺中市</option>
+                <option value="22.9997,120.2270">臺南市</option>
+                <option value="22.6273,120.3014">高雄市</option>
+                <option value="23.9872,121.6016">花蓮縣</option>
+              </optgroup>
+              <optgroup label="國際主要城市">
+                <option value="35.6762,139.6503">東京 (Tokyo)</option>
+                <option value="37.5665,126.9780">首爾 (Seoul)</option>
+                <option value="40.7128,-74.0060">紐約 (New York)</option>
+                <option value="51.5074,-0.1278">倫敦 (London)</option>
+                <option value="48.8566,2.3522">巴黎 (Paris)</option>
+                <option value="-33.8688,151.2093">雪梨 (Sydney)</option>
+              </optgroup>
+            </select>
+            <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[#7d6f66] text-xs pointer-events-none"></i>
+          </div>
+
+          <!-- Address Search Input -->
+          <form id="search-form" class="flex items-center gap-2 flex-1 relative">
+            <div class="relative w-full">
+              <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-[#7d6f66] text-sm"></i>
+              <input type="text" id="search-input" placeholder="輸入地址或地點（如：信義區、墾丁、Kyoto...）" 
+                     class="w-full bg-[#faf7f2] border border-[#e5d3c2] text-[#2c1e17] text-sm rounded-xl pl-10 pr-4 py-2.5 focus:ring-2 focus:ring-[#c88a58] focus:border-transparent outline-none placeholder-[#7d6f66]/60 font-medium">
+            </div>
+            <button type="submit" id="btn-search" class="px-4 py-2.5 bg-[#4a3324] hover:bg-[#3b281c] active:scale-95 text-amber-100 font-medium text-sm rounded-xl transition duration-150 flex items-center gap-1.5 whitespace-nowrap shadow-md shadow-[#4a3324]/20">
+              <i class="fa-solid fa-search"></i>
+              <span>搜尋</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Range Selector Buttons -->
+        <div class="flex items-center justify-between sm:justify-end gap-1.5 bg-[#f2e9de] p-1.5 rounded-xl border border-[#e5d3c2]">
+          <span class="text-xs text-[#7d6f66] pl-2 pr-1 hidden sm:inline"><i class="fa-regular fa-calendar-days"></i> 預測區間:</span>
+          <button data-days="1" class="range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 text-[#7d6f66] hover:text-[#2c1e17]">1 天</button>
+          <button data-days="3" class="range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 text-[#7d6f66] hover:text-[#2c1e17]">3 天</button>
+          <button data-days="7" class="range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 bg-[#4a3324] text-amber-100 shadow-sm">1 週</button>
+          <button data-days="14" class="range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 text-[#7d6f66] hover:text-[#2c1e17]">2 週</button>
+          <button data-days="16" class="range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 text-[#7d6f66] hover:text-[#2c1e17]">16 天</button>
+        </div>
+
+      </div>
+
+      <!-- Search History / Quick Tags & Informative Note -->
+      <div class="mt-3.5 pt-3 border-t border-[#e8ded5] flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex items-center gap-2 overflow-x-auto py-0.5" id="search-history-container">
+          <span class="text-[#7d6f66] whitespace-nowrap"><i class="fa-solid fa-history"></i> 近期搜尋：</span>
+          <div id="search-history-tags" class="flex items-center gap-1.5">
+            <!-- Dynamic tags -->
+          </div>
+        </div>
+
+        <div class="text-[#7d6f66] flex items-center gap-1.5">
+          <i class="fa-solid fa-circle-info text-[#c88a58]"></i>
+          <span>氣象模型 (Open-Meteo) 最長可提供 16 天精確逐日預報</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Today Overview & Humidity Highlights Grid -->
+    <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Main Current Weather Card -->
+      <div class="lg:col-span-1 coffee-card p-6 flex flex-col justify-between relative overflow-hidden group">
+        <div class="absolute -right-10 -bottom-10 w-44 h-44 bg-[#c88a58]/10 rounded-full blur-3xl pointer-events-none group-hover:bg-[#c88a58]/20 transition duration-500"></div>
+
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold px-3 py-1 rounded-full bg-[#f2e9de] text-[#7c5535] border border-[#e5d3c2]">
+              <i class="fa-regular fa-clock"></i> 即時氣象概況
+            </span>
+            <span id="current-time-text" class="text-xs text-[#7d6f66]">--:--</span>
+          </div>
+
+          <div class="mt-6 flex items-center justify-between">
+            <div>
+              <div class="flex items-baseline gap-1">
+                <span id="current-temp" class="text-5xl sm:text-6xl font-extrabold tracking-tight text-[#4a3324]">--</span>
+                <span class="text-2xl font-light text-[#7d6f66]">°C</span>
+              </div>
+              <p id="current-weather-desc" class="text-base font-semibold text-[#8c6239] mt-1">讀取中...</p>
+            </div>
+
+            <!-- Big Weather Icon -->
+            <div id="current-weather-icon-container" class="text-5xl sm:text-6xl text-[#c88a58] drop-shadow-md">
+              <i class="fa-solid fa-spinner fa-spin text-[#d5b79e]"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini Stats Bar inside Card -->
+        <div class="mt-8 pt-4 border-t border-[#e8ded5] grid grid-cols-2 gap-3 text-xs">
+          <div class="bg-[#faf7f2] p-2.5 rounded-xl border border-[#e5d3c2]">
+            <span class="text-[#7d6f66] block mb-0.5"><i class="fa-solid fa-temperature-half text-[#c88a58]"></i> 體感溫度</span>
+            <span id="apparent-temp" class="text-sm font-semibold text-[#4a3324]">-- °C</span>
+          </div>
+          <div class="bg-[#faf7f2] p-2.5 rounded-xl border border-[#e5d3c2]">
+            <span class="text-[#7d6f66] block mb-0.5"><i class="fa-solid fa-wind text-[#8c6239]"></i> 風速</span>
+            <span id="wind-speed" class="text-sm font-semibold text-[#4a3324]">-- km/h</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Humidity Highlight & Comfort Gauge Card -->
+      <div class="lg:col-span-2 coffee-card p-6 flex flex-col justify-between">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <div class="w-9 h-9 rounded-xl bg-[#f2e9de] flex items-center justify-center text-[#7c5535] text-lg">
+              <i class="fa-solid fa-droplet"></i>
+            </div>
+            <div>
+              <h2 class="font-bold text-[#4a3324]">相對濕度指數 (Relative Humidity)</h2>
+              <p class="text-xs text-[#7d6f66]">空氣含水量與體感舒適度分析</p>
+            </div>
+          </div>
+          <span id="humidity-badge" class="px-3.5 py-1 text-xs font-semibold rounded-full bg-[#f2e9de] text-[#7c5535] border border-[#e5d3c2]">
+            計算中
+          </span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 my-2">
+          
+          <!-- Big Humidity % Card -->
+          <div class="bg-[#faf7f2] p-4 rounded-xl border border-[#e5d3c2] flex flex-col justify-center items-center text-center">
+            <span class="text-xs text-[#7d6f66] mb-1"><i class="fa-solid fa-water text-[#c88a58]"></i> 當前相對濕度</span>
+            <div class="flex items-baseline gap-1 my-1">
+              <span id="current-humidity" class="text-4xl font-black text-[#7c5535]">--</span>
+              <span class="text-lg font-bold text-[#8c6239]">%</span>
+            </div>
+            <p id="humidity-advice" class="text-xs text-[#7d6f66] mt-1">--</p>
+          </div>
+
+          <!-- Humidity Visual Progress Gauge -->
+          <div class="sm:col-span-2 bg-[#faf7f2] p-4 rounded-xl border border-[#e5d3c2] flex flex-col justify-between">
+            <div class="flex justify-between items-center text-xs mb-2">
+              <span class="text-[#7d6f66]">濕度評估量表</span>
+              <span id="humidity-level-desc" class="text-[#7c5535] font-semibold">--</span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-[#e5d3c2] rounded-full h-4 p-0.5 border border-[#d5b79e] relative my-2 overflow-hidden">
+              <div id="humidity-progress-bar" class="h-full rounded-full bg-gradient-to-r from-[#c88a58] via-[#8c6239] to-[#4a3324] transition-all duration-1000 w-0"></div>
+            </div>
+
+            <!-- Scale Labels -->
+            <div class="flex justify-between text-[10px] text-[#7d6f66] font-mono">
+              <span>0% (乾燥)</span>
+              <span>40%-60% (最舒適)</span>
+              <span>100% (極潮濕)</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Humidity Impact Tips -->
+        <div class="mt-3 text-xs bg-[#faf7f2] p-3 rounded-xl border border-[#e5d3c2] flex items-start gap-2.5 text-[#2c1e17]">
+          <i class="fa-solid fa-lightbulb text-[#c88a58] mt-0.5 text-sm"></i>
+          <span id="humidity-tip">濕度直接影響空氣悶熱度與體感溫度。一般人體感最怡人的室內相對濕度介於 45% 至 65% 之間。</span>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- Interactive Dual-Axis Chart Section -->
+    <section class="coffee-card p-5 sm:p-6">
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
+        <div>
+          <h2 class="text-lg font-bold text-[#4a3324] flex items-center gap-2">
+            <i class="fa-solid fa-chart-line text-[#c88a58]"></i>
+            溫濕度變化對比圖表
+          </h2>
+          <p class="text-xs text-[#7d6f66] mt-0.5">雙 Y 軸即時呈現每日最高/最低氣溫 (°C) 與平均相對濕度 (%)</p>
+        </div>
+
+        <!-- Chart Mode Toggle Buttons -->
+        <div class="flex items-center gap-2 text-xs bg-[#f2e9de] p-1 rounded-xl border border-[#e5d3c2]">
+          <button id="toggle-all-chart" class="px-3 py-1 rounded-lg bg-[#4a3324] text-amber-100 font-medium transition">雙軸對比</button>
+          <button id="toggle-temp-chart" class="px-3 py-1 rounded-lg text-[#7d6f66] hover:text-[#2c1e17] transition">僅看氣溫</button>
+          <button id="toggle-humidity-chart" class="px-3 py-1 rounded-lg text-[#7d6f66] hover:text-[#2c1e17] transition">僅看濕度</button>
+        </div>
+      </div>
+
+      <!-- Chart Container -->
+      <div class="relative w-full h-72 sm:h-80 md:h-96">
+        <!-- Loading Overlay for Chart -->
+        <div id="chart-loading" class="absolute inset-0 bg-white/90 backdrop-blur-sm z-10 flex flex-col items-center justify-center rounded-xl transition duration-300">
+          <i class="fa-solid fa-circle-notch fa-spin text-3xl text-[#c88a58] mb-2"></i>
+          <span class="text-sm text-[#7d6f66] font-medium">正在生成氣象與濕度圖表...</span>
+        </div>
+        
+        <canvas id="forecastChart"></canvas>
+      </div>
+    </section>
+
+    <!-- Daily Forecast Cards Grid -->
+    <section class="space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-bold text-[#4a3324] flex items-center gap-2">
+          <i class="fa-regular fa-calendar-days text-[#c88a58]"></i>
+          逐日詳細預報 (<span id="forecast-days-count">7</span> 天)
+        </h2>
+        <span class="text-xs text-[#7d6f66]">點擊或懸停查看詳細數據</span>
+      </div>
+
+      <!-- Dynamic Cards Container -->
+      <div id="forecast-cards-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3.5">
+        <!-- Generated via JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-[#e8ded5] bg-white py-6 mt-12 text-center text-xs text-[#7d6f66]">
+    <div class="max-w-7xl mx-auto px-4 space-y-2">
+      <p>氣象與濕度資料來源：<a href="https://open-meteo.com/" target="_blank" rel="noopener" class="text-[#8c6239] hover:underline font-medium">Open-Meteo Weather API</a> & <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener" class="text-[#8c6239] hover:underline font-medium">Nominatim</a></p>
+      <p>© 咖啡風溫濕度氣象觀測站 — Designed for a Warm & Cozy Experience</p>
+    </div>
+  </footer>
+
+  <!-- JavaScript Application Logic -->
+  <script>
+    // --- Application State ---
+    const state = {
+      lat: 25.0330,
+      lon: 121.5654,
+      locationName: '臺北市',
+      forecastDays: 7,
+      weatherData: null,
+      chartInstance: null,
+      searchHistory: JSON.parse(localStorage.getItem('weather_coffee_history') || '["臺北市", "高雄市", "東京"]')
+    };
+
+    // --- DOM Elements ---
+    const currentLocationText = document.getElementById('current-location-text');
+    const presetSelect = document.getElementById('preset-select');
+    const searchForm = document.getElementById('search-form');
+    const searchInput = document.getElementById('search-input');
+    const btnRelocate = document.getElementById('btn-relocate');
+    const searchHistoryTags = document.getElementById('search-history-tags');
+    
+    const currentTempEl = document.getElementById('current-temp');
+    const currentWeatherDescEl = document.getElementById('current-weather-desc');
+    const currentWeatherIconEl = document.getElementById('current-weather-icon-container');
+    const currentTimeTextEl = document.getElementById('current-time-text');
+    const apparentTempEl = document.getElementById('apparent-temp');
+    const windSpeedEl = document.getElementById('wind-speed');
+
+    const currentHumidityEl = document.getElementById('current-humidity');
+    const humidityBadgeEl = document.getElementById('humidity-badge');
+    const humidityAdviceEl = document.getElementById('humidity-advice');
+    const humidityLevelDescEl = document.getElementById('humidity-level-desc');
+    const humidityProgressBar = document.getElementById('humidity-progress-bar');
+    const humidityTipEl = document.getElementById('humidity-tip');
+
+    const forecastCardsContainer = document.getElementById('forecast-cards-container');
+    const forecastDaysCountEl = document.getElementById('forecast-days-count');
+    const chartLoadingEl = document.getElementById('chart-loading');
+
+    // --- Toast Alert Helper ---
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const bgColors = {
+        info: 'bg-[#faf7f2] border-[#c39575] text-[#4a3324]',
+        success: 'bg-[#faf7f2] border-emerald-500 text-emerald-900',
+        error: 'bg-[#faf7f2] border-rose-400 text-rose-900',
+        warning: 'bg-[#faf7f2] border-amber-500 text-amber-900'
+      };
+
+      const icons = {
+        info: 'fa-circle-info text-[#c88a58]',
+        success: 'fa-circle-check text-emerald-600',
+        error: 'fa-circle-exclamation text-rose-500',
+        warning: 'fa-triangle-exclamation text-amber-600'
+      };
+
+      toast.className = `pointer-events-auto p-3.5 rounded-xl border shadow-lg flex items-center gap-3 text-xs sm:text-sm font-medium transform transition-all duration-300 opacity-0 translate-y-[-10px] ${bgColors[type] || bgColors.info}`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icons[type] || icons.info} text-base"></i>
+        <span class="flex-1">${message}</span>
+      `;
+
+      container.appendChild(toast);
+
+      requestAnimationFrame(() => {
+        toast.classList.remove('opacity-0', 'translate-y-[-10px]');
+      });
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-[-10px]');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    // --- WMO Weather Code Interpreter ---
+    function decodeWmoCode(code, isDay = 1) {
+      const wmoMap = {
+        0: { desc: '晴朗無雲', icon: isDay ? 'fa-sun text-amber-500' : 'fa-moon text-[#7c5535]' },
+        1: { desc: '晴間多雲', icon: isDay ? 'fa-cloud-sun text-amber-500' : 'fa-cloud-moon text-[#8c6239]' },
+        2: { desc: '多雲', icon: 'fa-cloud-sun text-[#c39575]' },
+        3: { desc: '陰天', icon: 'fa-cloud text-[#7d6f66]' },
+        45: { desc: '有霧', icon: 'fa-smog text-[#d5b79e]' },
+        48: { desc: '霧淞', icon: 'fa-smog text-[#c39575]' },
+        51: { desc: '輕微毛毛雨', icon: 'fa-cloud-rain text-[#8c6239]' },
+        53: { desc: '毛毛雨', icon: 'fa-cloud-rain text-[#7c5535]' },
+        55: { desc: '濃密毛毛雨', icon: 'fa-cloud-showers-heavy text-[#4a3324]' },
+        56: { desc: '凍雨毛毛雨', icon: 'fa-snowflake text-[#c88a58]' },
+        57: { desc: '強烈凍雨', icon: 'fa-snowflake text-[#7c5535]' },
+        61: { desc: '小雨', icon: 'fa-cloud-rain text-[#8c6239]' },
+        63: { desc: '中雨', icon: 'fa-cloud-showers-heavy text-[#7c5535]' },
+        65: { desc: '大雨', icon: 'fa-cloud-showers-heavy text-[#4a3324]' },
+        66: { desc: '輕微凍雨', icon: 'fa-snowflake text-[#c39575]' },
+        67: { desc: '強烈凍雨', icon: 'fa-snowflake text-[#7c5535]' },
+        71: { desc: '小雪', icon: 'fa-snowflake text-[#d5b79e]' },
+        73: { desc: '中雪', icon: 'fa-snowflake text-[#c39575]' },
+        75: { desc: '大雪', icon: 'fa-snowflake text-[#8c6239]' },
+        77: { desc: '雪粒', icon: 'fa-snowflake text-[#7d6f66]' },
+        80: { desc: '陣雨', icon: 'fa-cloud-sun-rain text-[#c88a58]' },
+        81: { desc: '中等陣雨', icon: 'fa-cloud-showers-heavy text-[#8c6239]' },
+        82: { desc: '強烈陣雨', icon: 'fa-cloud-showers-heavy text-[#4a3324]' },
+        85: { desc: '陣雪', icon: 'fa-snowflake text-[#c39575]' },
+        86: { desc: '強烈陣雪', icon: 'fa-snowflake text-[#7c5535]' },
+        95: { desc: '雷陣雨', icon: 'fa-bolt-lightning text-amber-600' },
+        96: { desc: '雷雨伴隨冰雹', icon: 'fa-bolt text-amber-700' },
+        99: { desc: '強雷雨伴大冰雹', icon: 'fa-bolt text-red-700' }
+      };
+
+      return wmoMap[code] || { desc: '多雲', icon: 'fa-cloud text-[#7d6f66]' };
+    }
+
+    // --- Humidity Level Status Evaluation ---
+    function evaluateHumidity(humidity) {
+      if (humidity < 30) {
+        return {
+          status: '空氣乾燥',
+          badgeClass: 'bg-amber-100 text-amber-800 border-amber-300',
+          advice: '氣候較乾燥，建議補充水分或使用加濕設施。',
+          tip: '濕度低於 30% 容易引發皮膚乾燥與乾咳，適度喝溫水能保持體內潤澤。'
+        };
+      } else if (humidity >= 30 && humidity <= 60) {
+        return {
+          status: '舒適宜人',
+          badgeClass: 'bg-[#f2e9de] text-[#7c5535] border-[#e5d3c2]',
+          advice: '黃金舒適區間，體感乾爽宜人。',
+          tip: '相對濕度 40%-60% 是最舒適的呼吸與生活環境。'
+        };
+      } else if (humidity > 60 && humidity <= 75) {
+        return {
+          status: '體感微潮濕',
+          badgeClass: 'bg-orange-100 text-orange-800 border-orange-300',
+          advice: '空氣較為潤澤，高溫時可能微感悶熱。',
+          tip: '相對濕度上升至 70% 左右時，衣物晾乾稍慢，室內可開微風對流保持爽朗。'
+        };
+      } else {
+        return {
+          status: '高度潮濕',
+          badgeClass: 'bg-amber-200 text-[#4a3324] border-amber-400',
+          advice: '極易感到潮濕悶熱，建議開啟除濕機。',
+          tip: '濕度高於 75% 時容易滋生黴菌，請及時開啟除濕設備維持空間舒適。'
+        };
+      }
+    }
+
+    // --- Reverse Geocoding via Nominatim ---
+    async function reverseGeocode(lat, lon) {
+      try {
+        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&accept-language=zh-TW`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Geocoding Error');
+        const data = await res.json();
+        
+        const addr = data.address || {};
+        const placeName = addr.city || addr.town || addr.county || addr.suburb || addr.state || data.display_name.split(',')[0] || '目前位置';
+        return placeName;
+      } catch (err) {
+        console.warn('Reverse geocode failed:', err);
+        return `${lat.toFixed(2)}°, ${lon.toFixed(2)}°`;
+      }
+    }
+
+    // --- Address Search Geocoding ---
+    async function geocodeAddress(query) {
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&accept-language=zh-TW&limit=1`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Search API Error');
+        const data = await res.json();
+        if (!data || data.length === 0) {
+          throw new Error('找不到該地點，請嘗試輸入更精確的地址或地名');
+        }
+        return {
+          lat: parseFloat(data[0].lat),
+          lon: parseFloat(data[0].lon),
+          displayName: data[0].display_name.split(',')[0] || query
+        };
+      } catch (err) {
+        throw err;
+      }
+    }
+
+    // --- Fetch Open-Meteo Weather Data ---
+    async function fetchWeatherData(lat, lon, days = 7) {
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,precipitation_sum,wind_speed_10m_max&forecast_days=${days}&timezone=auto`;
+      
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('無法取得 Open-Meteo 氣象資料');
+      return await res.json();
+    }
+
+    // --- Render Main Dashboard ---
+    function renderDashboard(data, locationName) {
+      state.weatherData = data;
+      state.locationName = locationName;
+
+      // Location & Time
+      currentLocationText.textContent = locationName;
+      const now = new Date();
+      currentTimeTextEl.textContent = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} 更新`;
+
+      // Current Weather
+      const current = data.current || {};
+      const temp = Math.round(current.temperature_2m ?? 0);
+      const humidity = Math.round(current.relative_humidity_2m ?? 0);
+      const apparent = Math.round(current.apparent_temperature ?? temp);
+      const wind = Math.round(current.wind_speed_10m ?? 0);
+      const code = current.weather_code ?? 0;
+      const isDay = current.is_day ?? 1;
+
+      const wmo = decodeWmoCode(code, isDay);
+
+      currentTempEl.textContent = temp;
+      currentWeatherDescEl.textContent = wmo.desc;
+      currentWeatherIconEl.innerHTML = `<i class="fa-solid ${wmo.icon}"></i>`;
+      apparentTempEl.textContent = `${apparent} °C`;
+      windSpeedEl.textContent = `${wind} km/h`;
+
+      // Humidity Section
+      currentHumidityEl.textContent = humidity;
+      const humEval = evaluateHumidity(humidity);
+      humidityBadgeEl.textContent = humEval.status;
+      humidityBadgeEl.className = `px-3.5 py-1 text-xs font-semibold rounded-full border ${humEval.badgeClass}`;
+      humidityAdviceEl.textContent = humEval.advice;
+      humidityLevelDescEl.textContent = `${humidity}% (${humEval.status})`;
+      humidityProgressBar.style.width = `${Math.min(Math.max(humidity, 5), 100)}%`;
+      humidityTipEl.textContent = humEval.tip;
+
+      // Update Cards & Chart
+      renderForecastCards(data.daily);
+      renderChart(data.daily);
+    }
+
+    // --- Render Daily Forecast Grid Cards ---
+    function renderForecastCards(daily) {
+      forecastCardsContainer.innerHTML = '';
+      if (!daily || !daily.time) return;
+
+      forecastDaysCountEl.textContent = daily.time.length;
+
+      daily.time.forEach((dateStr, idx) => {
+        const dateObj = new Date(dateStr + 'T00:00:00');
+        const month = dateObj.getMonth() + 1;
+        const day = dateObj.getDate();
+        const dayNames = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+        const dayName = dayNames[dateObj.getDay()];
+
+        const maxTemp = Math.round(daily.temperature_2m_max[idx]);
+        const minTemp = Math.round(daily.temperature_2m_min[idx]);
+        const humidity = Math.round(daily.relative_humidity_2m_mean[idx]);
+        const precip = (daily.precipitation_sum[idx] ?? 0).toFixed(1);
+        const code = daily.weather_code[idx];
+        const wmo = decodeWmoCode(code, 1);
+
+        const card = document.createElement('div');
+        card.className = 'coffee-card p-4 flex flex-col justify-between hover:border-[#c88a58] hover:shadow-lg hover:-translate-y-0.5 transition duration-200 group cursor-pointer';
+
+        card.innerHTML = `
+          <div>
+            <!-- Date & Day -->
+            <div class="flex items-center justify-between border-b border-[#e8ded5] pb-2 mb-3">
+              <div>
+                <span class="text-sm font-bold text-[#4a3324]">${month}/${day}</span>
+                <span class="text-xs text-[#8c6239] font-medium ml-1.5">${dayName}</span>
+              </div>
+              <span class="text-[11px] px-2 py-0.5 rounded-full bg-[#f2e9de] text-[#7c5535] border border-[#e5d3c2]">
+                ${idx === 0 ? '今日' : `+${idx}天`}
+              </span>
+            </div>
+
+            <!-- Weather Icon & Description -->
+            <div class="flex items-center justify-between my-2">
+              <span class="text-xs text-[#2c1e17] font-medium">${wmo.desc}</span>
+              <div class="text-2xl group-hover:scale-110 transition duration-200">
+                <i class="fa-solid ${wmo.icon}"></i>
+              </div>
+            </div>
+
+            <!-- Temperature Range -->
+            <div class="my-3 flex items-baseline justify-between">
+              <div class="text-xs text-[#7d6f66]">高 / 低溫</div>
+              <div class="text-sm font-bold">
+                <span class="text-[#c88a58]">${maxTemp}°</span>
+                <span class="text-[#7d6f66] mx-1">/</span>
+                <span class="text-[#8c6239]">${minTemp}°</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Humidity & Precip Footer -->
+          <div class="pt-2 border-t border-[#e8ded5] space-y-1 text-xs">
+            <div class="flex justify-between items-center text-[#2c1e17]">
+              <span class="text-[#7d6f66]"><i class="fa-solid fa-droplet text-[#8c6239] mr-1"></i> 平均濕度</span>
+              <span class="font-bold text-[#7c5535]">${humidity}%</span>
+            </div>
+            <div class="flex justify-between items-center text-[#7d6f66]">
+              <span><i class="fa-solid fa-cloud-rain text-[#c39575] mr-1"></i> 降雨量</span>
+              <span class="${precip > 0 ? 'text-[#8c6239] font-medium' : 'text-[#7d6f66]/60'}">${precip} mm</span>
+            </div>
+          </div>
+        `;
+
+        forecastCardsContainer.appendChild(card);
+      });
+    }
+
+    // --- Render Chart.js Dual-Axis Interactive Chart ---
+    let activeChartDisplayMode = 'all';
+
+    function renderChart(daily) {
+      chartLoadingEl.classList.remove('opacity-0', 'pointer-events-none');
+
+      const ctx = document.getElementById('forecastChart').getContext('2d');
+
+      const labels = daily.time.map(dateStr => {
+        const d = new Date(dateStr + 'T00:00:00');
+        const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+        return `${d.getMonth() + 1}/${d.getDate()} (${dayNames[d.getDay()]})`;
+      });
+
+      const maxTemps = daily.temperature_2m_max;
+      const minTemps = daily.temperature_2m_min;
+      const humidities = daily.relative_humidity_2m_mean;
+
+      if (state.chartInstance) {
+        state.chartInstance.destroy();
+      }
+
+      // Datasets configurations in Coffee Palette
+      const maxTempDataset = {
+        label: '最高氣溫 (°C)',
+        data: maxTemps,
+        borderColor: '#c88a58', // Caramel warm amber
+        backgroundColor: 'rgba(200, 138, 88, 0.1)',
+        borderWidth: 2.5,
+        tension: 0.35,
+        pointRadius: 4,
+        pointBackgroundColor: '#c88a58',
+        yAxisID: 'yTemp',
+        hidden: activeChartDisplayMode === 'humidity'
+      };
+
+      const minTempDataset = {
+        label: '最低氣溫 (°C)',
+        data: minTemps,
+        borderColor: '#8c6239', // Roasted Mocha
+        backgroundColor: 'rgba(140, 98, 57, 0.1)',
+        borderWidth: 2.5,
+        tension: 0.35,
+        pointRadius: 4,
+        pointBackgroundColor: '#8c6239',
+        yAxisID: 'yTemp',
+        hidden: activeChartDisplayMode === 'humidity'
+      };
+
+      const humidityDataset = {
+        label: '相對濕度 (%)',
+        data: humidities,
+        borderColor: '#4a3324', // Deep Espresso
+        backgroundColor: 'rgba(74, 51, 36, 0.08)',
+        fill: true,
+        borderWidth: 2,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: '#4a3324',
+        yAxisID: 'yHumidity',
+        hidden: activeChartDisplayMode === 'temp'
+      };
+
+      state.chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [maxTempDataset, minTempDataset, humidityDataset]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: {
+              labels: {
+                color: '#4a3324',
+                font: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' },
+                usePointStyle: true,
+                padding: 15
+              }
+            },
+            tooltip: {
+              backgroundColor: '#3b281c',
+              titleColor: '#faf7f2',
+              bodyColor: '#e5d3c2',
+              borderColor: '#c39575',
+              borderWidth: 1,
+              padding: 12,
+              boxPadding: 6,
+              usePointStyle: true,
+              callbacks: {
+                label: function(context) {
+                  let label = context.dataset.label || '';
+                  if (label) label += ': ';
+                  if (context.parsed.y !== null) {
+                    label += context.parsed.y + (context.dataset.yAxisID === 'yTemp' ? ' °C' : ' %');
+                  }
+                  return label;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: 'rgba(232, 222, 213, 0.6)' },
+              ticks: { color: '#7d6f66', font: { size: 11 } }
+            },
+            yTemp: {
+              type: 'linear',
+              display: activeChartDisplayMode !== 'humidity',
+              position: 'left',
+              title: {
+                display: true,
+                text: '氣溫 (°C)',
+                color: '#c88a58',
+                font: { size: 12, weight: 'bold' }
+              },
+              grid: { color: 'rgba(232, 222, 213, 0.6)' },
+              ticks: { color: '#c88a58' }
+            },
+            yHumidity: {
+              type: 'linear',
+              display: activeChartDisplayMode !== 'temp',
+              position: 'right',
+              min: 0,
+              max: 100,
+              title: {
+                display: true,
+                text: '相對濕度 (%)',
+                color: '#4a3324',
+                font: { size: 12, weight: 'bold' }
+              },
+              grid: { drawOnChartArea: activeChartDisplayMode === 'humidity', color: 'rgba(232, 222, 213, 0.6)' },
+              ticks: { color: '#4a3324' }
+            }
+          }
+        }
+      });
+
+      setTimeout(() => {
+        chartLoadingEl.classList.add('opacity-0', 'pointer-events-none');
+      }, 200);
+    }
+
+    // --- Search History Tags Management ---
+    function renderSearchHistory() {
+      searchHistoryTags.innerHTML = '';
+      state.searchHistory.slice(-4).reverse().forEach(name => {
+        const tag = document.createElement('button');
+        tag.className = 'px-2 py-0.5 rounded-md bg-[#faf7f2] hover:bg-[#f2e9de] text-[#7c5535] text-xs border border-[#e5d3c2] transition flex items-center gap-1 font-medium';
+        tag.innerHTML = `<span>${name}</span>`;
+        tag.addEventListener('click', () => handleSearchLocation(name));
+        searchHistoryTags.appendChild(tag);
+      });
+    }
+
+    function addSearchHistory(name) {
+      if (!name) return;
+      state.searchHistory = state.searchHistory.filter(item => item !== name);
+      state.searchHistory.push(name);
+      if (state.searchHistory.length > 8) state.searchHistory.shift();
+      localStorage.setItem('weather_coffee_history', JSON.stringify(state.searchHistory));
+      renderSearchHistory();
+    }
+
+    // --- Location Update Core Handler ---
+    async function updateLocationAndFetch(lat, lon, locationName) {
+      try {
+        state.lat = lat;
+        state.lon = lon;
+
+        chartLoadingEl.classList.remove('opacity-0', 'pointer-events-none');
+        
+        const data = await fetchWeatherData(lat, lon, state.forecastDays);
+        renderDashboard(data, locationName);
+        showToast(`已載入「${locationName}」天氣與濕度`, 'success');
+      } catch (err) {
+        console.error(err);
+        showToast(err.message || '載入資料失敗，請稍後重試', 'error');
+        chartLoadingEl.classList.add('opacity-0', 'pointer-events-none');
+      }
+    }
+
+    // --- Search Location Handler ---
+    async function handleSearchLocation(query) {
+      if (!query.trim()) return;
+      showToast(`搜尋「${query}」中...`, 'info');
+      
+      try {
+        const result = await geocodeAddress(query);
+        addSearchHistory(result.displayName);
+        await updateLocationAndFetch(result.lat, result.lon, result.displayName);
+      } catch (err) {
+        showToast(err.message || '找不到該地點，請檢查輸入內容', 'error');
+      }
+    }
+
+    // --- Auto Geolocation Handler ---
+    function initGeolocation() {
+      currentLocationText.textContent = '定位中...';
+      
+      if (!navigator.geolocation) {
+        showToast('您的瀏覽器不支援 GPS 定位，已載入預設城市：臺北市', 'warning');
+        updateLocationAndFetch(25.0330, 121.5654, '臺北市');
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          showToast('成功讀取 GPS 當前定位！', 'success');
+          
+          const name = await reverseGeocode(lat, lon);
+          updateLocationAndFetch(lat, lon, name);
+        },
+        (error) => {
+          console.warn('Geolocation denied or failed:', error.message);
+          showToast('未開啟定位存取，已切換至預設城市：臺北市', 'info');
+          updateLocationAndFetch(25.0330, 121.5654, '臺北市');
+        },
+        { timeout: 8000, enableHighAccuracy: true }
+      );
+    }
+
+    // --- Event Listeners Setup ---
+    function setupEventListeners() {
+      // Search form submit
+      searchForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        handleSearchLocation(searchInput.value);
+      });
+
+      // Preset city dropdown
+      presetSelect.addEventListener('change', async (e) => {
+        if (!e.target.value) return;
+        const [lat, lon] = e.target.value.split(',').map(Number);
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        const cityName = selectedOption.text.split(' (')[0];
+        
+        await updateLocationAndFetch(lat, lon, cityName);
+        presetSelect.value = '';
+      });
+
+      // Relocate button
+      btnRelocate.addEventListener('click', () => {
+        initGeolocation();
+      });
+
+      // Forecast Range Buttons
+      const rangeBtns = document.querySelectorAll('.range-btn');
+      rangeBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const days = parseInt(btn.dataset.days);
+          if (days === state.forecastDays) return;
+
+          state.forecastDays = days;
+
+          // Update active button styles
+          rangeBtns.forEach(b => {
+            b.className = 'range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 text-[#7d6f66] hover:text-[#2c1e17]';
+          });
+          btn.className = 'range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 bg-[#4a3324] text-amber-100 shadow-sm';
+
+          // Refetch data for new range
+          updateLocationAndFetch(state.lat, state.lon, state.locationName);
+        });
+      });
+
+      // Chart Display Mode Toggle Buttons
+      const btnAll = document.getElementById('toggle-all-chart');
+      const btnTemp = document.getElementById('toggle-temp-chart');
+      const btnHum = document.getElementById('toggle-humidity-chart');
+
+      const chartToggleBtns = [btnAll, btnTemp, btnHum];
+
+      function updateChartToggleStyle(activeBtn) {
+        chartToggleBtns.forEach(b => {
+          b.className = 'px-3 py-1 rounded-lg text-[#7d6f66] hover:text-[#2c1e17] transition';
+        });
+        activeBtn.className = 'px-3 py-1 rounded-lg bg-[#4a3324] text-amber-100 font-medium transition';
+      }
+
+      btnAll.addEventListener('click', () => {
+        activeChartDisplayMode = 'all';
+        updateChartToggleStyle(btnAll);
+        if (state.weatherData) renderChart(state.weatherData.daily);
+      });
+
+      btnTemp.addEventListener('click', () => {
+        activeChartDisplayMode = 'temp';
+        updateChartToggleStyle(btnTemp);
+        if (state.weatherData) renderChart(state.weatherData.daily);
+      });
+
+      btnHum.addEventListener('click', () => {
+        activeChartDisplayMode = 'humidity';
+        updateChartToggleStyle(btnHum);
+        if (state.weatherData) renderChart(state.weatherData.daily);
+      });
+    }
+
+    // --- Initialization ---
+    window.addEventListener('DOMContentLoaded', () => {
+      renderSearchHistory();
+      setupEventListeners();
+      initGeolocation();
+    });
+  </script>
+</body>
+</html>
