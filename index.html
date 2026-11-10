@@ -94,7 +94,7 @@
         <div>
           <h1 class="font-bold text-lg sm:text-xl tracking-tight text-[#4a3324] flex items-center gap-2">
             咖啡氣象與濕度觀測站
-            <span class="text-xs px-2 py-0.5 rounded-full bg-[#f2e9de] text-[#8c6239] font-normal hidden sm:inline">Cozy Mode</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-[#f2e9de] text-[#8c6239] font-normal hidden sm:inline">Smart Weather Advice</span>
           </h1>
           <p class="text-xs text-[#7d6f66] hidden sm:block">溫暖質感的每日氣溫與相對濕度預報系統</p>
         </div>
@@ -303,6 +303,28 @@
 
     </section>
 
+    <!-- NEW FEATURE: Smart Weather & Outfit Advice Section -->
+    <section class="coffee-card p-5 sm:p-6">
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center gap-2">
+          <div class="w-9 h-9 rounded-xl bg-[#f2e9de] flex items-center justify-center text-[#c88a58] text-lg">
+            <i class="fa-solid fa-user-tie"></i>
+          </div>
+          <div>
+            <h2 class="font-bold text-[#4a3324] text-base sm:text-lg">今日生活與穿搭建議 (Smart Weather Advice)</h2>
+            <p class="text-xs text-[#7d6f66]">根據溫濕度、雨量與日夜溫差即時為您量身打造的出門指南</p>
+          </div>
+        </div>
+        <span class="text-xs px-2.5 py-1 rounded-full bg-[#faf7f2] text-[#8c6239] border border-[#e5d3c2]">
+          <i class="fa-solid fa-sparkles text-[#c88a58] mr-1"></i>智慧推薦
+        </span>
+      </div>
+
+      <div id="smart-advice-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <!-- Rendered via JS -->
+      </div>
+    </section>
+
     <!-- Interactive Dual-Axis Chart Section -->
     <section class="coffee-card p-5 sm:p-6">
       <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
@@ -339,7 +361,7 @@
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-bold text-[#4a3324] flex items-center gap-2">
           <i class="fa-regular fa-calendar-days text-[#c88a58]"></i>
-          逐日詳細預報與推估 (<span id="forecast-days-count">7</span> 天)
+          逐日詳細預報與建議 (<span id="forecast-days-count">7</span> 天)
         </h2>
         <span class="text-xs text-[#7d6f66]">17 天以上顯示「歷史氣候推估」</span>
       </div>
@@ -395,6 +417,7 @@
     const humidityProgressBar = document.getElementById('humidity-progress-bar');
     const humidityTipEl = document.getElementById('humidity-tip');
 
+    const smartAdviceContainer = document.getElementById('smart-advice-container');
     const forecastCardsContainer = document.getElementById('forecast-cards-container');
     const forecastDaysCountEl = document.getElementById('forecast-days-count');
     const chartLoadingEl = document.getElementById('chart-loading');
@@ -460,7 +483,7 @@
         75: { desc: '大雪', icon: 'fa-snowflake text-[#8c6239]' },
         77: { desc: '雪粒', icon: 'fa-snowflake text-[#7d6f66]' },
         80: { desc: '陣雨', icon: 'fa-cloud-sun-rain text-[#c88a58]' },
-        81: { desc: '中等陣雨', icon: 'fa-cloud-showers-heavy text-[#8c6239]' },
+        81: { desc: '新潮陣雨', icon: 'fa-cloud-showers-heavy text-[#8c6239]' },
         82: { desc: '強烈陣雨', icon: 'fa-cloud-showers-heavy text-[#4a3324]' },
         85: { desc: '陣雪', icon: 'fa-snowflake text-[#c39575]' },
         86: { desc: '強烈陣雪', icon: 'fa-snowflake text-[#7c5535]' },
@@ -470,6 +493,97 @@
       };
 
       return wmoMap[code] || { desc: '多雲', icon: 'fa-cloud text-[#7d6f66]' };
+    }
+
+    // --- Weather & Outfit Advice Generator ---
+    function generateWeatherAdvice(tempMax, tempMin, humidity, precip, wmoCode) {
+      const advices = [];
+      const tags = [];
+      const tempDiff = tempMax - tempMin;
+      const rainCodes = [51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 95, 96, 99];
+
+      // 1. 雨具建議
+      const isRainy = precip > 0.5 || rainCodes.includes(wmoCode);
+      if (isRainy) {
+        advices.push({
+          icon: 'fa-umbrella',
+          iconColor: 'text-[#8c6239]',
+          badgeClass: 'bg-amber-100 text-[#4a3324] border-amber-300',
+          title: '雨具建議',
+          text: '今日有較高降雨機率，出門請隨身攜帶折疊傘或雨衣，並注意步道滑溜。'
+        });
+        tags.push({ icon: 'fa-umbrella', text: '記得帶傘', bg: 'bg-amber-100 text-[#7c5535] border-amber-300' });
+      }
+
+      // 2. 防曬防暑建議
+      if (tempMax >= 27 || [0, 1].includes(wmoCode)) {
+        advices.push({
+          icon: 'fa-sun',
+          iconColor: 'text-[#c88a58]',
+          badgeClass: 'bg-orange-100 text-orange-900 border-orange-300',
+          title: '防曬防暑',
+          text: tempMax >= 30 ? '氣溫較高且陽光強烈！請塗抹防曬乳、戴遮陽帽並多補充水分。' : '陽光燦爛，戶外活動建議做好基本防曬措施。'
+        });
+        if (tempMax >= 27) {
+          tags.push({ icon: 'fa-sun', text: '做好防曬', bg: 'bg-orange-100 text-orange-800 border-orange-200' });
+        }
+      }
+
+      // 3. 穿著保暖建議
+      if (tempMin < 18 || tempDiff >= 7) {
+        let text = '';
+        let tagText = '加件外套';
+        if (tempMin < 15) {
+          text = '氣溫偏低涼冷，建議配戴圍巾或穿著較厚實的外套保暖。';
+          tagText = '禦寒保暖';
+        } else if (tempDiff >= 7) {
+          text = `日夜溫差高達 ${Math.round(tempDiff)}°C！建議採用「洋蔥式穿搭」，方便隨時穿脫外套。`;
+          tagText = '洋蔥穿搭';
+        } else {
+          text = '早晚氣溫較涼，建議出門攜帶一件薄外套或長袖上衣。';
+        }
+        advices.push({
+          icon: 'fa-shirt',
+          iconColor: 'text-[#7c5535]',
+          badgeClass: 'bg-[#f2e9de] text-[#4a3324] border-[#e5d3c2]',
+          title: '穿著建議',
+          text: text
+        });
+        tags.push({ icon: 'fa-shirt', text: tagText, bg: 'bg-[#f2e9de] text-[#7c5535] border-[#e5d3c2]' });
+      }
+
+      // 4. 體感防潮 / 補水建議
+      if (humidity >= 80) {
+        advices.push({
+          icon: 'fa-droplet-slash',
+          iconColor: 'text-[#8c6239]',
+          badgeClass: 'bg-amber-50 text-[#8c6239] border-amber-200',
+          title: '體感防潮',
+          text: '環境相對濕度高於 80%，體感可能微感悶熱，室內可開微風對流或除濕。'
+        });
+      } else if (humidity < 40) {
+        advices.push({
+          icon: 'fa-bottle-water',
+          iconColor: 'text-[#c88a58]',
+          badgeClass: 'bg-amber-100 text-[#4a3324] border-amber-300',
+          title: '補水保濕',
+          text: '空氣較乾燥，請注意喉嚨與肌膚保濕，隨身攜帶保溫瓶多補充溫水。'
+        });
+      }
+
+      // 預設舒適
+      if (advices.length === 0) {
+        advices.push({
+          icon: 'fa-face-smile',
+          iconColor: 'text-emerald-600',
+          badgeClass: 'bg-emerald-50 text-emerald-900 border-emerald-200',
+          title: '舒適宜人',
+          text: '今天溫濕度適中且天氣晴朗舒適，非常適合戶外運動、散步與野餐！'
+        });
+        tags.push({ icon: 'fa-face-smile', text: '舒適宜人', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' });
+      }
+
+      return { advices, tags };
     }
 
     // --- Humidity Level Status Evaluation ---
@@ -563,19 +677,17 @@
       if (days > 16) {
         const today = new Date();
         
-        // Target start (Day 16) and end (Day days-1)
         const startDateObj = new Date(today);
         startDateObj.setDate(today.getDate() + 16);
-        startDateObj.setFullYear(startDateObj.getFullYear() - 1); // 1 year ago
+        startDateObj.setFullYear(startDateObj.getFullYear() - 1);
 
         const endDateObj = new Date(today);
         endDateObj.setDate(today.getDate() + (days - 1));
-        endDateObj.setFullYear(endDateObj.getFullYear() - 1); // 1 year ago
+        endDateObj.setFullYear(endDateObj.getFullYear() - 1);
 
         const startStr = formatDateISO(startDateObj);
         const endStr = formatDateISO(endDateObj);
 
-        // Calculate future dates strings for display
         const futureDates = [];
         for (let i = 16; i < days; i++) {
           const d = new Date(today);
@@ -645,9 +757,36 @@
       humidityProgressBar.style.width = `${Math.min(Math.max(humidity, 5), 100)}%`;
       humidityTipEl.textContent = humEval.tip;
 
+      // Render Smart Advice Block for Today
+      const todayMax = data.daily?.temperature_2m_max[0] ?? temp;
+      const todayMin = data.daily?.temperature_2m_min[0] ?? temp;
+      const todayPrecip = data.daily?.precipitation_sum[0] ?? 0;
+      renderSmartAdvice(todayMax, todayMin, humidity, todayPrecip, code);
+
       // Update Cards & Chart
       renderForecastCards(data.daily);
       renderChart(data.daily);
+    }
+
+    // --- Render Smart Weather Advice Cards ---
+    function renderSmartAdvice(tempMax, tempMin, humidity, precip, code) {
+      smartAdviceContainer.innerHTML = '';
+      const adviceResult = generateWeatherAdvice(tempMax, tempMin, humidity, precip, code);
+
+      adviceResult.advices.forEach(item => {
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-xl border flex items-start gap-3.5 transition duration-200 hover:shadow-md ${item.badgeClass}`;
+        card.innerHTML = `
+          <div class="w-9 h-9 rounded-lg bg-white/70 flex items-center justify-center text-lg shrink-0 shadow-sm">
+            <i class="fa-solid ${item.icon} ${item.iconColor}"></i>
+          </div>
+          <div class="space-y-0.5">
+            <h3 class="font-bold text-sm text-[#4a3324]">${item.title}</h3>
+            <p class="text-xs text-[#2c1e17]/80 leading-relaxed">${item.text}</p>
+          </div>
+        `;
+        smartAdviceContainer.appendChild(card);
+      });
     }
 
     // --- Render Daily Forecast Grid Cards ---
@@ -672,14 +811,25 @@
         const wmo = decodeWmoCode(code, 1);
 
         const isHistorical = idx >= 16;
+        const adviceObj = generateWeatherAdvice(maxTemp, minTemp, humidity, parseFloat(precip), code);
 
         const card = document.createElement('div');
         card.className = `coffee-card p-4 flex flex-col justify-between hover:border-[#c88a58] hover:shadow-lg hover:-translate-y-0.5 transition duration-200 group cursor-pointer ${isHistorical ? 'border-dashed border-[#c39575] bg-[#faf7f2]/80' : ''}`;
 
+        // Create tag HTML for card
+        let adviceTagsHtml = '';
+        if (adviceObj.tags.length > 0) {
+          adviceTagsHtml = adviceObj.tags.map(t => `
+            <span class="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border font-medium ${t.bg}">
+              <i class="fa-solid ${t.icon}"></i> ${t.text}
+            </span>
+          `).join('');
+        }
+
         card.innerHTML = `
           <div>
             <!-- Date & Day -->
-            <div class="flex items-center justify-between border-b border-[#e8ded5] pb-2 mb-3">
+            <div class="flex items-center justify-between border-b border-[#e8ded5] pb-2 mb-2.5">
               <div>
                 <span class="text-sm font-bold text-[#4a3324]">${month}/${day}</span>
                 <span class="text-xs text-[#8c6239] font-medium ml-1.5">${dayName}</span>
@@ -690,7 +840,7 @@
             </div>
 
             <!-- Weather Icon & Description -->
-            <div class="flex items-center justify-between my-2">
+            <div class="flex items-center justify-between my-1.5">
               <span class="text-xs text-[#2c1e17] font-medium">${wmo.desc}</span>
               <div class="text-2xl group-hover:scale-110 transition duration-200">
                 <i class="fa-solid ${wmo.icon}"></i>
@@ -698,13 +848,18 @@
             </div>
 
             <!-- Temperature Range -->
-            <div class="my-3 flex items-baseline justify-between">
+            <div class="my-2.5 flex items-baseline justify-between">
               <div class="text-xs text-[#7d6f66]">高 / 低溫</div>
               <div class="text-sm font-bold">
                 <span class="text-[#c88a58]">${maxTemp}°</span>
                 <span class="text-[#7d6f66] mx-1">/</span>
                 <span class="text-[#8c6239]">${minTemp}°</span>
               </div>
+            </div>
+
+            <!-- Advice Tags -->
+            <div class="flex flex-wrap gap-1 my-2">
+              ${adviceTagsHtml}
             </div>
           </div>
 
@@ -747,7 +902,6 @@
         state.chartInstance.destroy();
       }
 
-      // Datasets configurations in Coffee Palette with Dashed Segment for Historical (> Day 16)
       const maxTempDataset = {
         label: '最高氣溫 (°C)',
         data: maxTemps,
