@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>溫濕度氣象站 | Weather & Humidity</title>
+  <title>咖啡香溫濕度氣象站 | Cozy Coffee Weather & Humidity</title>
   
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -37,7 +37,7 @@
   </script>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap');
     
     body {
       font-family: 'Plus Jakarta Sans', 'Noto Sans TC', sans-serif;
@@ -45,14 +45,14 @@
       color: #2c1e17;
     }
 
-    /* Coffee Theme Warm Cards */
+    /* Coffee Theme Cards */
     .coffee-card {
-      background: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.94);
       backdrop-filter: blur(10px);
       -webkit-backdrop-filter: blur(10px);
       border: 1px solid #e8ded5;
       border-radius: 1.25rem;
-      box-shadow: 0 10px 25px -5px rgba(74, 51, 36, 0.05), 0 8px 10px -6px rgba(74, 51, 36, 0.03);
+      box-shadow: 0 10px 25px -5px rgba(74, 51, 36, 0.04), 0 8px 10px -6px rgba(74, 51, 36, 0.02);
     }
 
     .coffee-card-sm {
@@ -93,7 +93,7 @@
         </div>
         <div>
           <h1 class="font-bold text-lg sm:text-xl tracking-tight text-[#4a3324] flex items-center gap-2">
-            氣象與濕度觀測站
+            咖啡氣象與濕度觀測站
             <span class="text-xs px-2 py-0.5 rounded-full bg-[#f2e9de] text-[#8c6239] font-normal hidden sm:inline">Cozy Mode</span>
           </h1>
           <p class="text-xs text-[#7d6f66] hidden sm:block">溫暖質感的每日氣溫與相對濕度預報系統</p>
@@ -165,13 +165,15 @@
         </div>
 
         <!-- Range Selector Buttons -->
-        <div class="flex items-center justify-between sm:justify-end gap-1.5 bg-[#f2e9de] p-1.5 rounded-xl border border-[#e5d3c2]">
-          <span class="text-xs text-[#7d6f66] pl-2 pr-1 hidden sm:inline"><i class="fa-regular fa-calendar-days"></i> 預測區間:</span>
-          <button data-days="1" class="range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 text-[#7d6f66] hover:text-[#2c1e17]">1 天</button>
-          <button data-days="3" class="range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 text-[#7d6f66] hover:text-[#2c1e17]">3 天</button>
-          <button data-days="7" class="range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 bg-[#4a3324] text-amber-100 shadow-sm">1 週</button>
-          <button data-days="14" class="range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 text-[#7d6f66] hover:text-[#2c1e17]">2 週</button>
-          <button data-days="16" class="range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 text-[#7d6f66] hover:text-[#2c1e17]">16 天</button>
+        <div class="flex flex-wrap items-center gap-1 bg-[#f2e9de] p-1.5 rounded-xl border border-[#e5d3c2]">
+          <span class="text-xs text-[#7d6f66] pl-2 pr-1 hidden xl:inline"><i class="fa-regular fa-calendar-days"></i> 預測區間:</span>
+          <button data-days="1" class="range-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg transition text-[#7d6f66] hover:text-[#2c1e17]">1天</button>
+          <button data-days="3" class="range-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg transition text-[#7d6f66] hover:text-[#2c1e17]">3天</button>
+          <button data-days="7" class="range-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg transition bg-[#4a3324] text-amber-100 shadow-sm">1週</button>
+          <button data-days="14" class="range-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg transition text-[#7d6f66] hover:text-[#2c1e17]">2週</button>
+          <button data-days="16" class="range-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg transition text-[#7d6f66] hover:text-[#2c1e17]">16天</button>
+          <button data-days="30" class="range-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg transition text-[#7d6f66] hover:text-[#2c1e17]" title="前16天數值預報 + 後14天歷史氣候推估">30天(歷史)</button>
+          <button data-days="60" class="range-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg transition text-[#7d6f66] hover:text-[#2c1e17]" title="前16天數值預報 + 後44天歷史氣候推估">60天(歷史)</button>
         </div>
 
       </div>
@@ -185,9 +187,9 @@
           </div>
         </div>
 
-        <div class="text-[#7d6f66] flex items-center gap-1.5">
-          <i class="fa-solid fa-circle-info text-[#c88a58]"></i>
-          <span>氣象模型 (Open-Meteo) 最長可提供 16 天精確逐日預報</span>
+        <div class="text-[#7d6f66] flex items-center gap-2">
+          <span class="flex items-center gap-1"><span class="w-3 h-0.5 bg-[#c88a58] inline-block"></span> 實線：數值預報 (1-16天)</span>
+          <span class="flex items-center gap-1"><span class="w-3 h-0.5 border-t border-dashed border-[#8c6239] inline-block"></span> 虛線：歷史氣候推估 (17天+)</span>
         </div>
       </div>
     </section>
@@ -333,9 +335,9 @@
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-bold text-[#4a3324] flex items-center gap-2">
           <i class="fa-regular fa-calendar-days text-[#c88a58]"></i>
-          逐日詳細預報 (<span id="forecast-days-count">7</span> 天)
+          逐日詳細預報與推估 (<span id="forecast-days-count">7</span> 天)
         </h2>
-        <span class="text-xs text-[#7d6f66]">點擊或懸停查看詳細數據</span>
+        <span class="text-xs text-[#7d6f66]">17 天以上顯示「歷史氣候推估」</span>
       </div>
 
       <!-- Dynamic Cards Container -->
@@ -349,8 +351,8 @@
   <!-- Footer -->
   <footer class="border-t border-[#e8ded5] bg-white py-6 mt-12 text-center text-xs text-[#7d6f66]">
     <div class="max-w-7xl mx-auto px-4 space-y-2">
-      <p>氣象與濕度資料來源：<a href="https://open-meteo.com/" target="_blank" rel="noopener" class="text-[#8c6239] hover:underline font-medium">Open-Meteo Weather API</a> & <a href="https://www.openstreetmap.org/" target="_blank" rel="noopener" class="text-[#8c6239] hover:underline font-medium">Nominatim</a></p>
-      <p>© 溫濕度氣象觀測站 — Designed for a Warm & Cozy Experience</p>
+      <p>氣象資料來源：<a href="https://open-meteo.com/" target="_blank" rel="noopener" class="text-[#8c6239] hover:underline font-medium">Open-Meteo Weather API & Historical Archive API</a></p>
+      <p>© 咖啡風溫濕度氣象觀測站 — Cozy Weather & Humidity Forecast Dashboard</p>
     </div>
   </footer>
 
@@ -536,13 +538,70 @@
       }
     }
 
-    // --- Fetch Open-Meteo Weather Data ---
+    // Format date as YYYY-MM-DD
+    function formatDateISO(date) {
+      const yyyy = date.getFullYear();
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${yyyy}-${mm}-${dd}`;
+    }
+
+    // --- Fetch Open-Meteo Weather & Historical Data Combined ---
     async function fetchWeatherData(lat, lon, days = 7) {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,precipitation_sum,wind_speed_10m_max&forecast_days=${days}&timezone=auto`;
+      const forecastDaysLimit = Math.min(days, 16);
+      const forecastUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,apparent_temperature,is_day,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,precipitation_sum&forecast_days=${forecastDaysLimit}&timezone=auto`;
       
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('無法取得 Open-Meteo 氣象資料');
-      return await res.json();
+      const res = await fetch(forecastUrl);
+      if (!res.ok) throw new Error('無法取得 Open-Meteo 預報資料');
+      const forecastData = await res.json();
+
+      // If days > 16 (e.g. 30 or 60 days), fetch last year's historical climate archive to fill remaining days
+      if (days > 16) {
+        const today = new Date();
+        
+        // Target start (Day 16) and end (Day days-1)
+        const startDateObj = new Date(today);
+        startDateObj.setDate(today.getDate() + 16);
+        startDateObj.setFullYear(startDateObj.getFullYear() - 1); // 1 year ago
+
+        const endDateObj = new Date(today);
+        endDateObj.setDate(today.getDate() + (days - 1));
+        endDateObj.setFullYear(endDateObj.getFullYear() - 1); // 1 year ago
+
+        const startStr = formatDateISO(startDateObj);
+        const endStr = formatDateISO(endDateObj);
+
+        // Calculate future dates strings for display
+        const futureDates = [];
+        for (let i = 16; i < days; i++) {
+          const d = new Date(today);
+          d.setDate(today.getDate() + i);
+          futureDates.push(formatDateISO(d));
+        }
+
+        try {
+          const archiveUrl = `https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${startStr}&end_date=${endStr}&daily=weather_code,temperature_2m_max,temperature_2m_min,relative_humidity_2m_mean,precipitation_sum&timezone=auto`;
+          const archRes = await fetch(archiveUrl);
+          if (archRes.ok) {
+            const archData = await archRes.json();
+            if (archData && archData.daily) {
+              const d = forecastData.daily;
+              const a = archData.daily;
+
+              d.time = d.time.concat(futureDates);
+              d.temperature_2m_max = d.temperature_2m_max.concat(a.temperature_2m_max || []);
+              d.temperature_2m_min = d.temperature_2m_min.concat(a.temperature_2m_min || []);
+              d.relative_humidity_2m_mean = d.relative_humidity_2m_mean.concat(a.relative_humidity_2m_mean || []);
+              d.precipitation_sum = d.precipitation_sum.concat(a.precipitation_sum || []);
+              d.weather_code = d.weather_code.concat(a.weather_code || []);
+            }
+          }
+        } catch (archErr) {
+          console.warn('Historical archive fetch warning:', archErr);
+        }
+      }
+
+      return forecastData;
     }
 
     // --- Render Main Dashboard ---
@@ -601,15 +660,17 @@
         const dayNames = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
         const dayName = dayNames[dateObj.getDay()];
 
-        const maxTemp = Math.round(daily.temperature_2m_max[idx]);
-        const minTemp = Math.round(daily.temperature_2m_min[idx]);
-        const humidity = Math.round(daily.relative_humidity_2m_mean[idx]);
+        const maxTemp = Math.round(daily.temperature_2m_max[idx] ?? 0);
+        const minTemp = Math.round(daily.temperature_2m_min[idx] ?? 0);
+        const humidity = Math.round(daily.relative_humidity_2m_mean[idx] ?? 0);
         const precip = (daily.precipitation_sum[idx] ?? 0).toFixed(1);
-        const code = daily.weather_code[idx];
+        const code = daily.weather_code[idx] ?? 0;
         const wmo = decodeWmoCode(code, 1);
 
+        const isHistorical = idx >= 16;
+
         const card = document.createElement('div');
-        card.className = 'coffee-card p-4 flex flex-col justify-between hover:border-[#c88a58] hover:shadow-lg hover:-translate-y-0.5 transition duration-200 group cursor-pointer';
+        card.className = `coffee-card p-4 flex flex-col justify-between hover:border-[#c88a58] hover:shadow-lg hover:-translate-y-0.5 transition duration-200 group cursor-pointer ${isHistorical ? 'border-dashed border-[#c39575] bg-[#faf7f2]/80' : ''}`;
 
         card.innerHTML = `
           <div>
@@ -619,8 +680,8 @@
                 <span class="text-sm font-bold text-[#4a3324]">${month}/${day}</span>
                 <span class="text-xs text-[#8c6239] font-medium ml-1.5">${dayName}</span>
               </div>
-              <span class="text-[11px] px-2 py-0.5 rounded-full bg-[#f2e9de] text-[#7c5535] border border-[#e5d3c2]">
-                ${idx === 0 ? '今日' : `+${idx}天`}
+              <span class="text-[10px] px-2 py-0.5 rounded-full ${isHistorical ? 'bg-amber-100 text-[#7c5535] border border-amber-300 font-bold' : 'bg-[#f2e9de] text-[#7c5535] border border-[#e5d3c2]'}">
+                ${isHistorical ? '歷史推估' : (idx === 0 ? '今日' : `+${idx}天`)}
               </span>
             </div>
 
@@ -682,16 +743,20 @@
         state.chartInstance.destroy();
       }
 
-      // Datasets configurations in Coffee Palette
+      // Datasets configurations in Coffee Palette with Dashed Segment for Historical (> Day 16)
       const maxTempDataset = {
         label: '最高氣溫 (°C)',
         data: maxTemps,
-        borderColor: '#c88a58', // Caramel warm amber
-        backgroundColor: 'rgba(200, 138, 88, 0.1)',
+        borderColor: '#c88a58',
+        backgroundColor: 'rgba(200, 138, 88, 0.08)',
         borderWidth: 2.5,
         tension: 0.35,
-        pointRadius: 4,
-        pointBackgroundColor: '#c88a58',
+        pointRadius: (ctx) => (ctx.dataIndex >= 16 ? 3 : 4),
+        pointStyle: (ctx) => (ctx.dataIndex >= 16 ? 'rectRot' : 'circle'),
+        pointBackgroundColor: (ctx) => (ctx.dataIndex >= 16 ? '#8c6239' : '#c88a58'),
+        segment: {
+          borderDash: (ctx) => (ctx.p0DataIndex >= 15 ? [6, 6] : undefined),
+        },
         yAxisID: 'yTemp',
         hidden: activeChartDisplayMode === 'humidity'
       };
@@ -699,12 +764,16 @@
       const minTempDataset = {
         label: '最低氣溫 (°C)',
         data: minTemps,
-        borderColor: '#8c6239', // Roasted Mocha
-        backgroundColor: 'rgba(140, 98, 57, 0.1)',
+        borderColor: '#8c6239',
+        backgroundColor: 'rgba(140, 98, 57, 0.08)',
         borderWidth: 2.5,
         tension: 0.35,
-        pointRadius: 4,
-        pointBackgroundColor: '#8c6239',
+        pointRadius: (ctx) => (ctx.dataIndex >= 16 ? 3 : 4),
+        pointStyle: (ctx) => (ctx.dataIndex >= 16 ? 'rectRot' : 'circle'),
+        pointBackgroundColor: (ctx) => (ctx.dataIndex >= 16 ? '#4a3324' : '#8c6239'),
+        segment: {
+          borderDash: (ctx) => (ctx.p0DataIndex >= 15 ? [6, 6] : undefined),
+        },
         yAxisID: 'yTemp',
         hidden: activeChartDisplayMode === 'humidity'
       };
@@ -712,13 +781,16 @@
       const humidityDataset = {
         label: '相對濕度 (%)',
         data: humidities,
-        borderColor: '#4a3324', // Deep Espresso
-        backgroundColor: 'rgba(74, 51, 36, 0.08)',
+        borderColor: '#4a3324',
+        backgroundColor: 'rgba(74, 51, 36, 0.05)',
         fill: true,
         borderWidth: 2,
         tension: 0.4,
-        pointRadius: 3,
+        pointRadius: (ctx) => (ctx.dataIndex >= 16 ? 2.5 : 3.5),
         pointBackgroundColor: '#4a3324',
+        segment: {
+          borderDash: (ctx) => (ctx.p0DataIndex >= 15 ? [6, 6] : undefined),
+        },
         yAxisID: 'yHumidity',
         hidden: activeChartDisplayMode === 'temp'
       };
@@ -760,6 +832,9 @@
                   if (label) label += ': ';
                   if (context.parsed.y !== null) {
                     label += context.parsed.y + (context.dataset.yAxisID === 'yTemp' ? ' °C' : ' %');
+                  }
+                  if (context.dataIndex >= 16) {
+                    label += ' (歷史氣候推估)';
                   }
                   return label;
                 }
@@ -839,7 +914,7 @@
         
         const data = await fetchWeatherData(lat, lon, state.forecastDays);
         renderDashboard(data, locationName);
-        showToast(`已載入「${locationName}」天氣與濕度`, 'success');
+        showToast(`已載入「${locationName}」天氣與濕度數據`, 'success');
       } catch (err) {
         console.error(err);
         showToast(err.message || '載入資料失敗，請稍後重試', 'error');
@@ -924,9 +999,9 @@
 
           // Update active button styles
           rangeBtns.forEach(b => {
-            b.className = 'range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 text-[#7d6f66] hover:text-[#2c1e17]';
+            b.className = 'range-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg transition text-[#7d6f66] hover:text-[#2c1e17]';
           });
-          btn.className = 'range-btn px-3 py-1.5 text-xs font-semibold rounded-lg transition duration-150 bg-[#4a3324] text-amber-100 shadow-sm';
+          btn.className = 'range-btn px-2.5 py-1.5 text-xs font-semibold rounded-lg transition bg-[#4a3324] text-amber-100 shadow-sm';
 
           // Refetch data for new range
           updateLocationAndFetch(state.lat, state.lon, state.locationName);
