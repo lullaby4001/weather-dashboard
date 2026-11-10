@@ -122,30 +122,34 @@
     <section class="coffee-card p-4 sm:p-5">
       <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         
-        <!-- Address Search & Preset Dropdown -->
+        <!-- Address Search & Flat Preset Dropdown -->
         <div class="flex flex-col sm:flex-row items-stretch gap-3 flex-1">
-          <!-- Preset Selector -->
-          <div class="relative min-w-[150px]">
+          <!-- Flat City Selector (All 22 Taiwan Counties/Cities) -->
+          <div class="relative min-w-[160px]">
             <select id="preset-select" class="w-full bg-[#faf7f2] border border-[#e5d3c2] text-[#2c1e17] text-sm rounded-xl px-3.5 py-2.5 focus:ring-2 focus:ring-[#c88a58] focus:border-transparent outline-none cursor-pointer appearance-none pr-8 font-medium">
-              <option value="" disabled selected>快速切換城市</option>
-              <optgroup label="台灣主要城市">
-                <option value="25.0330,121.5654">臺北市</option>
-                <option value="25.0120,121.4657">新北市</option>
-                <option value="24.9936,121.3010">桃園市</option>
-                <option value="24.8138,120.9675">新竹市</option>
-                <option value="24.1477,120.6736">臺中市</option>
-                <option value="22.9997,120.2270">臺南市</option>
-                <option value="22.6273,120.3014">高雄市</option>
-                <option value="23.9872,121.6016">花蓮縣</option>
-              </optgroup>
-              <optgroup label="國際主要城市">
-                <option value="35.6762,139.6503">東京 (Tokyo)</option>
-                <option value="37.5665,126.9780">首爾 (Seoul)</option>
-                <option value="40.7128,-74.0060">紐約 (New York)</option>
-                <option value="51.5074,-0.1278">倫敦 (London)</option>
-                <option value="48.8566,2.3522">巴黎 (Paris)</option>
-                <option value="-33.8688,151.2093">雪梨 (Sydney)</option>
-              </optgroup>
+              <option value="" disabled selected>快速選擇台灣縣市</option>
+              <option value="25.0330,121.5654">臺北市</option>
+              <option value="25.0120,121.4657">新北市</option>
+              <option value="25.1283,121.7419">基隆市</option>
+              <option value="24.9936,121.3010">桃園市</option>
+              <option value="24.8138,120.9675">新竹市</option>
+              <option value="24.8387,121.0077">新竹縣</option>
+              <option value="24.5602,120.8214">苗栗縣</option>
+              <option value="24.1477,120.6736">臺中市</option>
+              <option value="24.0518,120.5161">彰化縣</option>
+              <option value="23.9609,120.9719">南投縣</option>
+              <option value="23.7092,120.4313">雲林縣</option>
+              <option value="23.4800,120.4491">嘉義市</option>
+              <option value="23.4588,120.5740">嘉義縣</option>
+              <option value="22.9997,120.2270">臺南市</option>
+              <option value="22.6273,120.3014">高雄市</option>
+              <option value="22.5519,120.5487">屏東縣</option>
+              <option value="24.7021,121.7377">宜蘭縣</option>
+              <option value="23.9872,121.6016">花蓮縣</option>
+              <option value="22.7613,121.1444">臺東縣</option>
+              <option value="23.5711,119.5793">澎湖縣</option>
+              <option value="24.4493,118.3767">金門縣</option>
+              <option value="26.1505,119.9499">連江縣 (馬祖)</option>
             </select>
             <i class="fa-solid fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-[#7d6f66] text-xs pointer-events-none"></i>
           </div>
@@ -366,7 +370,7 @@
       forecastDays: 7,
       weatherData: null,
       chartInstance: null,
-      searchHistory: JSON.parse(localStorage.getItem('weather_coffee_history') || '["臺北市", "高雄市", "東京"]')
+      searchHistory: JSON.parse(localStorage.getItem('weather_coffee_history') || '["臺北市", "高雄市", "台中市"]')
     };
 
     // --- DOM Elements ---
@@ -972,12 +976,12 @@
         handleSearchLocation(searchInput.value);
       });
 
-      // Preset city dropdown
+      // Flat preset city dropdown
       presetSelect.addEventListener('change', async (e) => {
         if (!e.target.value) return;
         const [lat, lon] = e.target.value.split(',').map(Number);
         const selectedOption = e.target.options[e.target.selectedIndex];
-        const cityName = selectedOption.text.split(' (')[0];
+        const cityName = selectedOption.text;
         
         await updateLocationAndFetch(lat, lon, cityName);
         presetSelect.value = '';
