@@ -1176,7 +1176,7 @@
         if (!e.target.value) return;
         const [lat, lon] = e.target.value.split(',').map(Number);
         const selectedOption = e.target.options[e.target.selectedIndex];
-        const cityName = `📍 ${selectedOption.text}`;
+        const cityName = `${selectedOption.text}`;
         
         await updateLocationAndFetch(lat, lon, cityName);
         presetSelect.value = '';
