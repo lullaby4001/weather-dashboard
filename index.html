@@ -14,6 +14,13 @@
 
   <!-- Tailwind Custom Palette Extension -->
   <script>
+    // 監聽瀏覽器的 paint 事件
+  new PerformanceObserver((entryList) => {
+    for (const entry of entryList.getEntriesByName('first-contentful-paint')) {
+      console.log(`⚡ 首屏繪製 (FCP): ${entry.startTime.toFixed(2)} ms`);
+    }
+  }).observe({ type: 'paint', buffered: true });
+    
     tailwind.config = {
       theme: {
         extend: {
